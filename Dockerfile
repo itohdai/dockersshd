@@ -1,24 +1,20 @@
-# sshd
-#
-# VERSION               0.0.2
+# CentOS7の最新イメージを使う
+FROM centos:centos7
 
-FROM ubuntu:14.04
+# OpenSSH サーバをインストールする
+RUN yum -y install openssh-server
 
-RUN apt-get update && apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN echo 'root:screencast' | chpasswd
-RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# sshでログインできるようにする 
+RUN sed -ri 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# SSH login fix. Otherwise user is kicked off after login
-RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+# root のパスワードを 設定
+RUN echo 'root:rootpass' | chpasswd
 
-ENV NOTVISIBLE "in users profile"
-RUN echo "export VISIBLE=now" >> /etc/profile
+# 使わないにしてもここに公開鍵を登録しておかないとログインできない 
+RUN ssh-keygen -t rsa -N "" -f /etc/ssh/ssh_host_rsa_key
 
-RUN groupadd -g 1000 developer && \
-    useradd  -g      developer -m -s /bin/bash devuser && \
-    echo 'devuser:devdevdev12' | chpasswd
-
+# sshd の使うポートを公開する
 EXPOSE 22
-CMD ["/usr/sbin/sshd", "-D"]
 
+# sshd を起動する
+CMD ["/usr/sbin/sshd", "-D"]
