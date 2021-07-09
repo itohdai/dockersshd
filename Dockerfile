@@ -7,6 +7,7 @@ RUN yum -y install openssh-server
 
 # sshでログインできるようにする 
 RUN sed -ri 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN systemctl start sshd.service
 
 # root のパスワードを 設定
 RUN echo 'root:rootpass' | chpasswd
