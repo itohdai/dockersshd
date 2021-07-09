@@ -2,7 +2,8 @@
 FROM centos:centos7
 
 # OpenSSH サーバをインストールする
-RUN yum -y install openssh-server
+RUN dnf update -y && dnf clean all -y
+RUN dng install -y openssh-server && dnf clean all -y
 
 # sshでログインできるようにする 
 RUN sed -ri 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
