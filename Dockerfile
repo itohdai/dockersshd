@@ -1,22 +1,38 @@
 # CentOS7の最新イメージを使う
 FROM centos:centos7
-USER root
+RUN yum -y install openssh-server git
+RUN yum -y install ed # needed to edit passwd and group
+RUN yum clean all
 
-# OpenSSH サーバをインストールする
-RUN yum -y install openssh-server
+# setup openssh
+RUN sed -i "s/#PasswordAuthentication yes/PasswordAuthentication no/" /etc/ssh/sshd_config
+# SSHd 7.4+ (maybe earlier) this is not needed, see
+#  https://lists.mindrot.org/pipermail/openssh-unix-dev/2017-August/036168.html
+# RUN sed -i 's/#UsePrivilegeSeparation.*$/UsePrivilegeSeparation no/' /etc/ssh/sshd_config
 
-# sshでログインできるようにする 
-RUN sed -ri 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
-RUN systemctl start sshd.service
+RUN sed -i 's/#Port.*$/Port 2022/' /etc/ssh/sshd_config
+RUN chmod 775 /var/run
+RUN rm -f /var/run/nologin
 
-# root のパスワードを 設定
-RUN echo 'root:rootpass' | chpasswd
+# setup git user
+RUN adduser --system -s /bin/bash -u 1234321 -g 0 git # uid to replace later
+RUN chmod 775 /etc/ssh /home # keep writable for openshift user group (root)
+RUN chmod 660 /etc/ssh/sshd_config
+RUN chmod 664 /etc/passwd /etc/group # to help uid fix
+RUN ln -s /home/git /repos # nicer repo url
 
-# 使わないにしてもここに公開鍵を登録しておかないとログインできない 
-RUN ssh-keygen -t rsa -N "" -f /etc/ssh/ssh_host_rsa_key
+EXPOSE 2022
+LABEL Description="sample git server; you need to add your ssh keys after startup; on restart you lose repos by default" Vendor="Red Hat" Version="1.0"
 
-# sshd の使うポートを公開する
-EXPOSE 22
-
-# sshd を起動する
-CMD ["/usr/sbin/sshd", "-D"]
+USER git
+# CMD ["/usr/sbin/sshd", "-D"]
+# FYI sed -i uses a temporary fail which approach fails
+CMD echo -e ",s/1234321/`id -u`/g\\012 w" | ed -s /etc/passwd && \
+    mkdir -p /home/git/.ssh && \
+    touch /home/git/.ssh/authorized_keys && \
+    chmod 700 /home/git/.ssh && \
+    chmod 600 /home/git/.ssh/authorized_keys && \
+    mkdir /home/git/sample.git && \
+    git -C /home/git/sample.git init --bare && \
+    ssh-keygen -A && \
+exec /usr/sbin/sshd -D
