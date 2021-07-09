@@ -1,5 +1,6 @@
 # CentOS7の最新イメージを使う
 FROM centos:centos7
+USER root
 
 # OpenSSH サーバをインストールする
 RUN yum -y install openssh-server
