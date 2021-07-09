@@ -1,5 +1,5 @@
-# CentOS7の最新イメージを使う
-FROM centos:centos7
+FROM ubi8
+USER root
 
 # OpenSSH サーバをインストールする
 RUN dnf update -y && dnf clean all -y
