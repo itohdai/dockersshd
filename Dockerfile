@@ -1,6 +1,12 @@
 FROM ubi8
 USER root
 
+ENV \
+    APP_ROOT=/opt/app-root \
+    HOME=/opt/app-root/src \
+    PATH=/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    PLATFORM="el8"
+    
 # OpenSSH サーバをインストールする
 RUN dnf update -y && dnf clean all -y
 RUN dng install -y openssh-server && dnf clean all -y
